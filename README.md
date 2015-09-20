@@ -18,4 +18,4 @@ Then, go ahead and download the element's dependencies:
 ## Installing responsive-container
 To add element to your Polymer project, use following command line:
 
-    bower install dstefanox/responsive-container
+    bower install dstefanox/responsive-containers

@@ -4,7 +4,7 @@
   "authors": [
     "dstefanox <dstefanox@gmail.com>"
   ],
-  "description": "Fixed-width container that resizes between min and max width depending on browser window dimensions.",
+  "description": "Fixed-width Polymer container component that resizes between min and max width depending on browser window dimensions.",
   "keywords": [
     "web-component",
     "polymer",
