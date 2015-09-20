@@ -1,0 +1,239 @@
+<!--
+@license
+Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../iron-media-query/iron-media-query.html">
+
+
+<!--
+This element is a container which resizes together with a browser window, starting from specified default width.
+It resizes within given `minWidth` and `maxWidth` and it's breaking points are specified by user `step` attribute.
+
+
+Example:
+
+    <responsive-container></responsive-container>
+
+@group Seed Elements
+@element responsive-container
+@demo demo/index.html
+@hero hero.svg
+-->
+<dom-module id="responsive-container">
+
+  <template>
+    <style>
+      :host {
+        @apply(--layout-horizontal);
+        @apply(--layout-wrap);
+        @apply(--layout-center-justified);
+      }
+      .container {
+        @apply(--layout-horizontal);
+        @apply(--layout-wrap);
+        @apply(--layout-center-justified);
+        width:990px;
+        background-color: #dedede;
+      }
+  
+    </style>
+    <iron-media-query id="lowerLimit" query-matches="{{lowerMatches}}"></iron-media-query>
+    <iron-media-query id="upperLimit" query-matches="{{upperMatches}}"></iron-media-query>
+      <content></content>
+  </template>
+
+</dom-module>
+
+<script>
+
+  Polymer({
+
+    is: 'responsive-container',
+
+    properties: {
+      lowerMatches: {
+        type:Boolean,
+        observer:'qmc'
+      },
+      upperMatches: {
+        type:Boolean,
+        observer:'upperMatch'
+      },
+      
+      containerWidth: {
+        type:Number,
+        value: 990,
+        observer: 'recalcQueries',
+      },
+      minWidth: {
+        type:Number,
+        value: 330,
+      },
+      maxWidth: {
+        type:Number,
+        value: 1100
+      },
+      step: {
+        type:Number,
+        value: 100,
+      }
+    },
+    qmc:function(newVal, oldVal) {
+      console.log("Going left:",newVal);
+      if (!newVal) {
+        // Make sure we don't go below minimum width
+        if (this.containerWidth-this.step >=this.minWidth) {
+          this.containerWidth -= this.step; 
+        }
+      }
+    },
+    upperMatch: function(newVal, oldVal) {
+      console.log("Going right:",newVal);
+      if (!newVal) {
+        // Make sure we don't go over maximum width
+        if (this.containerWidth + this.step <=this.maxWidth) {
+          this.containerWidth += this.step;
+        }
+      }
+    },
+    recalcQueries: function(newVal, OldVal) {
+        console.log("updated width",this.containerWidth);
+        this.style.width = (this.containerWidth)+"px"; 
+        //Polymer.dom(this.$).style.width = (this.containerWidth)+"px";
+        this.$.lowerLimit.queryChanged("(min-width: "+(this.containerWidth+this.step/2)+"px)");
+        this.$.upperLimit.queryChanged("(max-width: "+(this.containerWidth+(this.step*3)/2)+"px)");
+      
+    },
+    counter:0,
+    timer:null,
+    windowResized:function(_this, e) {
+      if(_this.timer == null) {
+        _this.timer = setInterval(function(component) {
+          function handler(e) {
+            component.debounceResize(component);
+          }
+          return handler;
+        }(_this),1000);
+        console.log("timer set",_this);
+      }
+      _this.counter++;
+    },
+    debounceResize:function(_this) {
+      console.log("Resized",_this.counter," times");
+      if (_this.counter == -1) {
+        /*
+         * This means that from previous timeout there were no changes in size, so we will do update.
+         */
+         _this.updateTresholds();
+         _this.counter = 0;
+         clearInterval(_this.timer);
+         _this.timer = null;
+         return;
+      }
+      _this.counter = -1;
+    },
+
+    // Element Lifecycle
+
+    ready: function() {
+      // `ready` is called after all elements have been configured, but
+      // propagates bottom-up. This element's children are ready, but parents
+      // are not.
+      //
+      // This is the point where you should make modifications to the DOM (when
+      // necessary), or kick off any processes the element wants to perform.
+      window.addEventListener('resize', function(component) {
+        
+        function handler(e) {
+          component.windowResized(component, e);
+        }
+        return handler;
+      }(this));
+      console.log("root is",Polymer.dom(this));
+    },
+
+    attached: function() {
+      // `attached` fires once the element and its parents have been inserted
+      // into a document.
+      //
+      // This is a good place to perform any work related to your element's
+      // visual state or active behavior (measuring sizes, beginning animations,
+      // loading resources, etc).
+      this.updateTresholds();
+    },
+    /**
+     * In this function, we check width of the window and try to place 
+     * lower and upper media query breaking points on the left and right of the window edge, respectively.
+     * While doing so, we also consider specified minimum and maximum width of the container
+     */
+    updateTresholds: function() {
+      // Get width of the window
+      var newWidth = this.getWidth();
+      // Get current lower media query value
+      var current = this.containerWidth + this.step/2;
+      // Determine in which direction we are moving media query lower breaking point - left (-1) or right(+1)
+      var factor = -1;
+      if (current < newWidth) {
+        factor = +1;
+      }
+      console.log("Window width:", newWidth, "Current lower limit "+current);
+      var cnt =0;
+      // Move breaking point until window egde is between lower and upper
+      while(!(Math.abs(newWidth - current) <=this.step && newWidth>current)) {
+        current += factor*this.step;
+        if (cnt++>10) break;
+      };
+      // Here is the width of the container that is calculated. 
+      var calculatedWidth = current - this.step/2;
+      console.log("Calculated:",calculatedWidth);
+      // Now just make sure that calcluated value is between specified max and min value
+      if (this.maxWidth>0) {
+        while (this.maxWidth < calculatedWidth) {
+          calculatedWidth -=this.step;
+        }
+      }
+      if (this.minWidth>0) {
+        while (this.minWidth > calculatedWidth) {
+          calculatedWidth += this.step;
+        }
+      }
+      // Now set container size
+      this.containerWidth = calculatedWidth;
+      console.log("Limited:",calculatedWidth);
+      // And finally put lower and upper breaking points around container's right edge.
+      this.recalcQueries();
+    },
+
+    detached: function() {
+      // The analog to `attached`, `detached` fires when the element has been
+      // removed from a document.
+      //
+      // Use this to clean up anything you did in `attached`.
+    },
+    getWidth: function() {
+      var winW = 630;
+      if (document.body && document.body.offsetWidth) {
+        winW = document.body.offsetWidth;
+      }
+      if (document.compatMode=='CSS1Compat' &&
+          document.documentElement &&
+          document.documentElement.offsetWidth ) {
+        winW = document.documentElement.offsetWidth;
+      }
+      if (window.innerWidth && window.innerHeight) {
+        winW = window.innerWidth;
+      }
+      return winW;      
+    }
+
+
+  });
+
+</script>

@@ -1,0 +1,29 @@
+{
+  "name": "responsive-container",
+  "version": "1.0.0",
+  "authors": [
+    "dstefanox <dstefanox@gmail.com>"
+  ],
+  "description": "Fixed-width container that resizes between min and max width depending on browser window dimensions.",
+  "keywords": [
+    "web-component",
+    "polymer",
+    "responsive",
+    "container",
+    "responsive grid"
+  ],
+  "main": "responsive-container.html",
+  "license": "http://polymer.github.io/LICENSE.txt",
+  "homepage": "https://github.com/dstefanox/responsive-container/",
+  "ignore": [
+    "/.*",
+    "/test/"
+  ],
+  "dependencies": {
+    "polymer": "Polymer/polymer#^1.0.0"
+  },
+  "devDependencies": {
+    "iron-component-page": "PolymerElements/iron-component-page#^1.0.0",
+    "web-component-tester": "*"
+  }
+}
