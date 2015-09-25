@@ -13,13 +13,19 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
 
 <!--
-This element is a container which resizes together with a browser window, starting from specified default width.
-It resizes within given `minWidth` and `maxWidth` and it's breaking points are specified by user `step` attribute.
+This element is a container which resizes together with a browser window, starting from specified default `width`.
+For window, we specify minimum width below which container starts to resize as a property `window-width`.
+Container resizes in steps (`step` attribute). For example, when `step` is set to 100, and `window-width` to 1400, 
+container will shrink for 100 pixels when window reaches 1400, 1300, 1200... pixels.    
+Minimum size of the container is specified using `min-width` attribute, and it will resize below this value.  
 
 
 Example:
 
-    <responsive-container></responsive-container>
+    <responsive-container window-width="1400" width="1100" min-width="500" step="100"></responsive-container>
+    
+In example above, container will start shrinking between 1100 and 500 pixels while window is shrunk between 1400 and 800 pixels. 
+Below this window width, container will keep its minimum width of 500 pixels.
 
 @group Seed Elements
 @element responsive-container
@@ -29,17 +35,6 @@ Example:
 <dom-module id="responsive-container">
 
   <template>
-    <style>
-      
-      :host {
-        @apply(--layout-horizontal);
-        @apply(--layout-wrap);
-        @apply(--layout-center-justified);
-      }
-      
-    </style>
-    <iron-media-query id="lowerLimit" query-matches="{{_lowerMatches}}"></iron-media-query>
-    <iron-media-query id="upperLimit" query-matches="{{_upperMatches}}"></iron-media-query>
       <content></content>
   </template>
 
@@ -52,20 +47,13 @@ Example:
     is: 'responsive-container',
 
     properties: {
-      _lowerMatches: {
-        type:Boolean,
-        observer:'_lowerMatch'
-      },
-      _upperMatches: {
-        type:Boolean,
-        observer:'upperMatch'
-      },
       /**
        * Current value of the width that is calculated according to window size. 
        */
       currentWidth: {
         type:Number,
-        observer: 'recalcQueries'
+        observer: '_widthChanged',
+        notify: true
       },
       /**
        * Preferred (and maximum possible) width of the container, if window size allows it.
@@ -77,105 +65,54 @@ Example:
         observer: '_widthSet',
       },
       /**
-       * Minimum allowed width of the container. Container will not resize below this width. 
+       * When window size goes below this value, container will start to resize. 
+       * Container will change its width on every [windowWidth - n*step] pixels
+       */
+      windowWidth: {
+        type:Number,
+        value: 1400,
+      },
+      /**
+       * Minimum allowed width of the container. Container will not resize below this width, no matter how much window is shrunk.
        */
       minWidth: {
         type:Number,
         value: 220,
       },
       /**
-       * Container width is incremented/decremented by step value until it best fits window size.
+       * Container width is incremented/decremented in steps.
        */
       step: {
         type:Number,
         value: 200,
-      }
-    },
-    /*
-     * This counter is used to track changes in window size 
-     */
-    _counter:0,
-    /*
-     * Timer internaly used to activate recalculation of the container width once window changes were finished. 
-     */
-    _timer:null,
-    /**
-     * When window size has gone below lower limit (newVal == false), new container width is calculated. Oterwise, nothing is done.
-     * @param newVal New value of the query match
-     * @param oldVal Old value of the query match
-     */
-    _lowerMatch:function(newVal, oldVal) {
-      if (!newVal) {
-        // Make sure we don't go below minimum width
-        if (this.currentWidth - this.step >=this.minWidth) {
-          this.currentWidth -= this.step; 
-        }
+      },
+
+      _stepsDown: {
+        type:Number,
+        value:0
       }
     },
     /**
-     * When window width grows above upper limit (newVal == false), new container width is calculated. Oterwise, nothing is done.
-     */
-    upperMatch: function(newVal, oldVal) {
-      if (!newVal) {
-        // Make sure we don't go over maximum width
-        if (this.currentWidth + this.step <=this.width) {
-          this.currentWidth += this.step;
-        }
-      }
-    },
-    /**
-     * Once that new width is calculated due to the changes in window size, this function is invoked.
-     * It updates container width and media queries, so that changes in window size trigger queries again.
+     * Once that new container width is calculated due to the changes in window size, this function is invoked.
+     * It updates container width so that changes are immediatelly visible
      *  
      * @param {number} newVal New width of the container.
      * @param {number} oldVal Old width of the container.
      */
-    recalcQueries: function(newVal, oldVal) {
+    _widthChanged: function(newVal, oldVal) {
         this.style.width = newVal+"px"; 
-        this.$.lowerLimit.queryChanged("(min-width: "+(newVal+this.step/2)+"px)");
-        this.$.upperLimit.queryChanged("(max-width: "+(newVal+(this.step*3)/2)+"px)");
       
-    },
-    /**
-     * If user really quickly resizes window, standard media query mechanism fails to react quickly enough
-     * so additional mechanism is added to solve this problem, which relies on tracking window resize events.
-     * This function is invoked each time window is resized, and it starts timer which waits for resizing to settle
-     * and then recalculates container size to make sure that it is right.
-     */
-    _windowResized:function(_this, e) {
-      if(_this._timer == null) {
-        _this._timer = setInterval(function(component) {
-          function handler(e) {
-            component.debounceResize(component);
-          }
-          return handler;
-        }(_this),100); 
-      }
-      _this._counter++;
-    },
-    /**
-     * Checks if there were any window size changes in last timer interval.
-     * If there were not (_counter == -1), it cancels timer and initiates recalculation of container width.
-     * It there were changes, it resets change indicator and lets timer to go one more interval before it checks again.
-     */
-    debounceResize:function(_this) {
-      if (_this._counter == -1) {
-        /*
-         * This means that from previous timeout there were no changes in size, so we will do update.
-         */
-         _this.updateTresholds();
-         _this._counter = 0;
-         clearInterval(_this._timer);
-         _this._timer = null;
-         return;
-      }
-      _this._counter = -1;
     },
     /**
      * Observer of the width property. Copies it into the currentWidth propery to 
      * kick-in initial calculation of the container width.
      */
-    _widthSet:function(newVal, oldVals) {
+    _widthSet:function(newVal, oldVal) {
+      if (isNaN(newVal)) {
+        this.warn("Provided width "+newVal+" is not a number. Units are always pixels.");
+        this.width = 1000;
+        return;
+      }
       this.currentWidth = newVal;
     },
 
@@ -187,55 +124,52 @@ Example:
        */
       window.addEventListener('resize', function(component) {
         function handler(e) {
-          component._windowResized(component, e);
+          component._windowSizeChanged(component, e);
         }
         return handler;
       }(this));
+    },
+    /**
+     * Called every time window resize event is detected. It calculates widht of the container, and resizes container if tresholds are reached.
+     * @param _this Component context, allows us to access component internals when function is called from window context
+     * @parap e Resize event.
+     */
+    _windowSizeChanged: function(_this,e) {
+      var winWidth = _this._getWidth();
+      var currentTreshold = _this.windowWidth - _this._stepsDown * _this.step;
+
+      if (winWidth > currentTreshold && winWidth < currentTreshold+_this.step) {
+        return;
+      } 
+      if (winWidth < _this.minWidth && currentTreshold == _this.minWidth) {
+        return;
+      }
+      if (winWidth > _this.windowWidth && currentTreshold == _this.windowWidth) {
+        return;
+      }
+      
+      var maxSteps = Math.ceil((_this.width - _this.minWidth) / _this.step);
+      var diff = (_this.windowWidth - winWidth);
+      if (diff < 0) {
+        _this._stepsDown = 0;
+      } else {
+        var steps = Math.ceil(diff / _this.step) + 1;
+        if (steps > maxSteps) {
+          steps = maxSteps;
+        }
+        _this._stepsDown = steps;
+      }
+      console.log("steps down:"+_this._stepsDown);
+
+      _this.currentWidth = _this.width - (_this._stepsDown * _this.step);
+
     },
 
     attached: function() {
       /**
        * Makes sure that component width is calculated once it is attached to the document.
        */
-      this.updateTresholds();
-    },
-    /**
-     * This function checks width of the window and tries to place 
-     * lower and upper media query breaking points on the left and right of the window edge, respectively.
-     * While doing so, it also considers specified minimum and maximum width of the container.
-     * This function should be called from outside if from some reason component does not react to change in window width automaticaly. 
-     */
-    updateTresholds: function() {
-      // Get width of the window
-      var newWidth = this._getWidth();
-      // Get current lower media query value
-      var current = this.currentWidth + this.step/2;
-      // Determine in which direction we are moving media query lower breaking point - left (-1) or right(+1)
-      var factor = -1;
-      if (current < newWidth) {
-        factor = +1;
-      }
-      // Move breaking point until window egde is between lower and upper
-      var cnt = 0;
-      while(!(Math.abs(newWidth - current) <=this.step && newWidth>current)) {
-        current += factor*this.step;
-        if (cnt++ > 10) break;
-      };
-      // Here is the width of the container that is calculated. 
-      var calculatedWidth = current - this.step/2;
-      // Now just make sure that calcluated value is between specified max and min value
-      if (this.width>0) {
-        while (this.width < calculatedWidth) {
-          calculatedWidth -=this.step;
-        }
-      }
-      if (this.minWidth>0) {
-        while (this.minWidth > calculatedWidth) {
-          calculatedWidth += this.step;
-        }
-      }
-      // Set container width variable, which trigers observer which sets container size and updates media queries 
-      this.currentWidth = calculatedWidth;
+      this._windowSizeChanged(this);
     },
     /**
      * Obtain window width
@@ -255,7 +189,16 @@ Example:
         winW = window.innerWidth;
       }
       return winW;      
+    }, 
+    /**
+     * Show warning in console, if console is available
+     */
+    warn: function() {
+      if (typeof console != 'undefined' && console.warn) {
+        console.warn(arguments);
+      }
     }
+
   });
 
 </script>

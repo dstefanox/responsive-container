@@ -1,6 +1,6 @@
 # responsive-container
 
-Fixed-width Polymer container component that resizes between min and max width depending on browser window dimensions.
+Fixed-width Polymer container component that resizes between min and max width depending on browser window dimensions. 
 
 
 ## Dependencies
@@ -18,4 +18,4 @@ Then, go ahead and download the element's dependencies:
 ## Installing responsive-container
 To add element to your Polymer project, use following command line:
 
-    bower install dstefanox/responsive-containers
+    bower install dstefanox/responsive-container

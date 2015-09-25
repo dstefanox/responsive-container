@@ -16,27 +16,29 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
     <link rel="import" href="../responsive-container.html">
     <link rel="import" href="../../iron-flex-layout/iron-flex-layout.html">
+    <link rel="import" href="../../iron-flex-layout/classes/iron-flex-layout.html">
     
   </head>
-  <body unresolved>
+  <body unresolved class="fullbleed">
+    <template is="dom-bind" id="app">
+    <p>An example of <code>&lt;responsive-container&gt;</code>
+    Resize browser window to se how it adapts on window width changes. Current width: <span>{{current}}</span></p>
 
-    <p>An example of <code>&lt;responsive-container&gt;</code>:</p>
-
-
-    <responsive-container class="layout wrap horizontal center-justified" width="900">
-        <div style="width:220px; height:220px;background-color:red;margin:16px;">Hello from red</div>
-        <div style="width:220px; height:220px;background-color:green;margin:16px;">Hello from green</div>
-        <div style="width:220px; height:220px;background-color:red;margin:16px;">Hello from red</div>
-        <div style="width:220px; height:220px;background-color:green;margin:16px;">Hello from green</div>
-        <div style="width:220px; height:220px;background-color:red;margin:16px;">Hello from red</div>
-        <div style="width:220px; height:220px;background-color:green;margin:16px;">Hello from green</div>
-        <div style="width:220px; height:220px;background-color:red;margin:16px;">Hello from red</div>
-        <div style="width:220px; height:220px;background-color:green;margin:16px;">Hello from green</div>
-    </responsive-scontainer>
- 
-
+    <div class="layout wrap horizontal center-justified">
+        <responsive-container class="layout wrap horizontal center-justified" window-width="1400" width="{{width}}" min-width="500" step="100" current-width="{{current}}">
+            <div style="width:220px; height:220px;background-color:red;margin:16px;">Hello from red</div>
+            <div style="width:220px; height:220px;background-color:green;margin:16px;">Hello from green</div>
+            <div style="width:220px; height:220px;background-color:red;margin:16px;">Hello from red</div>
+            <div style="width:220px; height:220px;background-color:green;margin:16px;">Hello from green</div>
+            <div style="width:220px; height:220px;background-color:red;margin:16px;">Hello from red</div>
+            <div style="width:220px; height:220px;background-color:green;margin:16px;">Hello from green</div>
+            <div style="width:220px; height:220px;background-color:red;margin:16px;">Hello from red</div>
+            <div style="width:220px; height:220px;background-color:green;margin:16px;">Hello from green</div>
+        </responsive-scontainer>
+    </div>
+    </template>
     <script>
-      
+      app.width = "1100px";
     </script>
 
   </body>
